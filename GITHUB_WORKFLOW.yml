@@ -1,0 +1,63 @@
+name: LOGISTEC - Compilar APK Android
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    name: Generar APK de LOGISTEC Mobile
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Descargar archivos del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Reconstruir carpetas del proyecto desde los archivos planos
+        run: python RECONSTRUIR_LOGISTEC.py
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Configurar Java JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Preparar Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Instalar plataforma y herramientas Android
+        run: sdkmanager 'platform-tools' 'platforms;android-36' 'build-tools;36.0.0'
+
+      - name: Preparar proyecto Android y sincronizar Capacitor
+        run: bash mobile/scripts/CONFIGURAR_ANDROID_CI.sh
+
+      - name: Verificar Gradle Wrapper
+        run: test -f mobile/android/gradlew
+
+      - name: Compilar APK de depuracion
+        working-directory: mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon :app:assembleDebug --stacktrace
+
+      - name: Publicar APK descargable
+        uses: actions/upload-artifact@v4
+        with:
+          name: LOGISTEC-Mobile-debug-APK
+          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14

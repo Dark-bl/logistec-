@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#071426">
+  <meta name="description" content="LOGISTEC Mobile para conductores y seguimiento GPS autorizado durante la jornada.">
+  <title>LOGISTEC Mobile</title>
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <div class="app-frame">
+    <header class="topbar">
+      <div class="brand-mark">L</div>
+      <div class="brand-copy"><b>LOGISTEC</b><small>MOBILE · CONDUCTORES</small></div>
+      <span id="connection-pill" class="connection-pill">Sin conexión</span>
+    </header>
+
+    <main>
+      <section id="login-screen" class="login-screen">
+        <div class="eyebrow">ACCESO DE CONDUCTOR</div>
+        <h1>Tu jornada,<br><span>conectada.</span></h1>
+        <p class="muted">Inicia sesión con la cuenta de conductor que ya utilizas en LOGISTEC.</p>
+        <form id="login-form" class="surface form-stack">
+          <label>Correo electrónico<input id="login-email" type="email" autocomplete="username" required placeholder="conductor@empresa.com"></label>
+          <label>Contraseña<input id="login-password" type="password" autocomplete="current-password" required placeholder="Tu contraseña"></label>
+          <button class="primary-button" id="login-submit" type="submit">Iniciar sesión</button>
+          <button class="link-button" id="recover-password" type="button">Recuperar contraseña</button>
+          <p id="login-message" class="form-message" role="status"></p>
+        </form>
+        <p class="fine-print">La aplicación no crea una cuenta distinta. Usa Supabase Auth y los permisos de tu organización LOGISTEC.</p>
+      </section>
+
+      <section id="app-screen" hidden>
+        <div class="welcome-row"><div><div class="eyebrow">ESPACIO DE TRABAJO</div><h1 id="welcome-name">Hola</h1><p id="welcome-company" class="muted">Empresa</p></div><button id="signout-button" class="icon-button" type="button" aria-label="Cerrar sesión">↗</button></div>
+        <div class="tabs" role="tablist" aria-label="Navegación principal">
+          <button class="tab active" data-tab="home" type="button">Inicio</button>
+          <button class="tab" data-tab="tracking" type="button">Seguimiento</button>
+          <button class="tab" data-tab="deliveries" type="button">Entregas</button>
+          <button class="tab" data-tab="profile" type="button">Perfil</button>
+          <button class="tab" data-tab="settings" type="button">Configuración</button>
+        </div>
+
+        <section id="tab-home" class="tab-panel active">
+          <div class="surface shift-card">
+            <div class="shift-top"><div><div class="eyebrow">ESTADO DE JORNADA</div><h2 id="shift-status">Sin iniciar</h2></div><span id="gps-dot" class="status-dot"></span></div>
+            <div class="shift-grid"><div><small>Vehículo</small><b id="home-vehicle">Sin asignar</b></div><div><small>GPS</small><b id="home-gps-status">Apagado</b></div></div>
+            <label class="vehicle-label">Vehículo autorizado<select id="vehicle-select"></select></label>
+            <div class="shift-actions"><button id="start-shift" class="primary-button" type="button">Iniciar jornada y compartir GPS</button><button id="pause-shift" class="secondary-button" type="button" hidden>Pausar seguimiento</button><button id="resume-shift" class="primary-button" type="button" hidden>Reanudar seguimiento</button><button id="recover-gps" class="secondary-button" type="button" hidden>Restablecer conexión GPS</button><button id="finish-shift" class="danger-button" type="button" hidden>Finalizar jornada</button></div>
+            <p id="tracking-disclosure" class="privacy-note">Tu ubicación se comparte únicamente después de que inicies la jornada. Android mostrará una notificación persistente mientras el GPS esté activo. Puedes pausar o finalizar en cualquier momento.</p>
+          </div>
+          <div class="two-metrics"><article class="surface metric"><small>Entregas activas</small><strong id="home-active-deliveries">0</strong></article><article class="surface metric"><small>Completadas</small><strong id="home-done-deliveries">0</strong></article></div>
+          <article class="surface"><div class="section-head"><div><h3>Próximas entregas</h3><p class="muted">Asignadas a tu perfil</p></div><button class="text-button" data-open-tab="deliveries" type="button">Ver todas</button></div><div id="home-deliveries" class="delivery-list"></div></article>
+        </section>
+
+        <section id="tab-tracking" class="tab-panel" hidden>
+          <article class="surface"><div class="section-head"><div><div class="eyebrow">LOCALIZACIÓN AUTORIZADA</div><h2>Mi ubicación</h2></div><span id="tracking-state-pill" class="state-pill">Sin iniciar</span></div><div id="mobile-map" class="mobile-map"></div><div class="position-grid"><div><small>Latitud</small><b id="position-lat">—</b></div><div><small>Longitud</small><b id="position-lng">—</b></div><div><small>Precisión</small><b id="position-accuracy">—</b></div><div><small>Último envío</small><b id="position-time">—</b></div><div><small>Velocidad</small><b id="position-speed">—</b></div><div><small>Dirección</small><b id="position-heading">—</b></div></div><p id="sync-status" class="fine-print">El estado de transmisión aparecerá aquí.</p></article>
+        </section>
+
+        <section id="tab-deliveries" class="tab-panel" hidden>
+          <div class="section-intro"><div class="eyebrow">OPERACIÓN ASIGNADA</div><h2>Mis entregas</h2><p class="muted">Consulta las direcciones y los estados de tus entregas.</p></div>
+          <div id="deliveries-list" class="delivery-list"></div>
+        </section>
+
+        <section id="tab-profile" class="tab-panel" hidden>
+          <div class="surface profile-card"><div class="eyebrow">CUENTA LOGISTEC</div><h2>Mi perfil</h2><div class="profile-field"><small>Nombre</small><b id="profile-name">—</b></div><div class="profile-field"><small>Correo</small><b id="profile-email">—</b></div><div class="profile-field"><small>Empresa</small><b id="profile-company">—</b></div><div class="profile-field"><small>Rol</small><b id="profile-role">Conductor</b></div><div class="profile-field"><small>Estado de cuenta</small><b id="profile-status">Activo</b></div></div>
+        </section>
+
+        <section id="tab-settings" class="tab-panel" hidden>
+          <div class="surface"><div class="eyebrow">PRIVACIDAD Y DIAGNÓSTICO</div><h2>Configuración</h2><h3>Ubicación durante la jornada</h3><p class="muted">LOGISTEC Mobile no recopila ubicación antes de iniciar la jornada ni después de finalizarla. Mientras el seguimiento está activo, Android mantiene visible una notificación. La ubicación se envía a la empresa asociada a tu cuenta y al vehículo autorizado.</p><div class="profile-field"><small>Permiso de ubicación</small><b id="diagnostic-permission">Pendiente de comprobación</b></div><div class="profile-field"><small>Servicio de ubicación</small><b id="diagnostic-location">Pendiente de comprobación</b></div><div class="profile-field"><small>Servicio GPS LOGISTEC</small><b id="diagnostic-service">Pendiente de comprobación</b></div><div class="profile-field"><small>Notificaciones</small><b id="diagnostic-notifications">Pendiente de comprobación</b></div><p id="diagnostic-text" class="fine-print">El diagnóstico aparecerá aquí.</p><button id="refresh-context" class="secondary-button full-width" type="button">Actualizar diagnóstico y datos de mi cuenta</button></div>
+          <div class="surface"><div class="eyebrow">ESTADO DE CONEXIÓN</div><h3>Sincronización</h3><p class="muted">Las posiciones capturadas durante una jornada pueden quedar temporalmente en cola si no hay internet. Se sincronizan al recuperar conexión. Una pausa detiene primero la captura en el teléfono; un cierre pendiente bloquea el inicio de otra jornada hasta confirmarse en Supabase.</p><p id="settings-connection" class="fine-print">—</p></div>
+        </section>
+      </section>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    </main>
+    <footer>LOGISTEC · Operación segura y ubicación autorizada</footer>
+  </div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

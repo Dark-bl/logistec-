@@ -1,0 +1,2 @@
+[functions.logistec-gps-ingest]
+verify_jwt = true
