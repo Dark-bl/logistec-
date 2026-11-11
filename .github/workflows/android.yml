@@ -1,20 +1,24 @@
-name: LOGISTEC - Compilar APK Android
+
+name: LOGISTEC - Generar APK Android
 
 on:
   workflow_dispatch:
   push:
-    branches: [main, master]
+    branches:
+      - main
+      - master
 
 permissions:
   contents: read
 
 jobs:
-  build-android:
-    name: Generar APK de LOGISTEC Mobile
+  build:
+    name: Compilar LOGISTEC Mobile
     runs-on: ubuntu-latest
     timeout-minutes: 45
+
     steps:
-      - name: Descargar archivos del repositorio
+      - name: Descargar repositorio
         uses: actions/checkout@v4
 
       - name: Configurar Python
@@ -22,7 +26,7 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Reconstruir carpetas del proyecto desde los archivos planos
+      - name: Reconstruir carpetas LOGISTEC
         run: python RECONSTRUIR_LOGISTEC.py
 
       - name: Configurar Node.js
@@ -30,7 +34,7 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Configurar Java JDK
+      - name: Configurar Java
         uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -38,26 +42,37 @@ jobs:
 
       - name: Preparar Android SDK
         uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
 
-      - name: Instalar plataforma y herramientas Android
-        run: sdkmanager 'platform-tools' 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Instalar Android API 36
+        run: |
+          sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
 
-      - name: Preparar proyecto Android y sincronizar Capacitor
-        run: bash mobile/scripts/CONFIGURAR_ANDROID_CI.sh
+      - name: Instalar TypeScript y preparar aplicación
+        working-directory: mobile
+        run: |
+          npm install --save-dev typescript@^5.9.3
+          npm run build
 
-      - name: Verificar Gradle Wrapper
-        run: test -f mobile/android/gradlew
+      - name: Generar proyecto Android y sincronizar Capacitor
+        run: |
+          bash mobile/scripts/CONFIGURAR_ANDROID_CI.sh
 
-      - name: Compilar APK de depuracion
+      - name: Verificar Gradle
+        run: |
+          test -f mobile/android/gradlew
+          chmod +x mobile/android/gradlew
+
+      - name: Compilar APK
         working-directory: mobile/android
         run: |
-          chmod +x gradlew
           ./gradlew --no-daemon :app:assembleDebug --stacktrace
 
-      - name: Publicar APK descargable
+      - name: Publicar APK
         uses: actions/upload-artifact@v4
         with:
-          name: LOGISTEC-Mobile-debug-APK
+          name: LOGISTEC-Mobile-APK
           path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
